@@ -7,6 +7,10 @@ public class AIStatus : MonoBehaviour
     public float sleep { get; private set; }
     public float hunger { get; private set; }
 
+    // Valores
+    public float hungerPerFood { get; private set; } = 20.0f;
+
+    // Outras classes
     private AIHead ai_head;
 
     private void Awake()
