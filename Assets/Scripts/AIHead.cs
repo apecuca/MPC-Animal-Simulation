@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using static Unity.VisualScripting.Member;
 
 public enum AIAction
 {
@@ -34,6 +34,8 @@ public class AIHead : MonoBehaviour
     protected float eatDuration = 10.0f;
     protected float eatingTimer = 0.0f;
     protected float dangerousHunger = 60.0f;
+    // No caso de dano
+    protected float timeLeftToContinueEating = 1.0f;
 
     // SLEEPING
     protected float satisfyingSleep = 90.0f;
@@ -67,9 +69,6 @@ public class AIHead : MonoBehaviour
     virtual protected void Update()
     {
         ManageBehaviour();
-
-        if (Input.GetKeyDown(KeyCode.R))
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     #region MANAGEMENT
@@ -156,23 +155,25 @@ public class AIHead : MonoBehaviour
         ForceNewAction(AIAction.DEAD);
     }
 
-    /*
-    public void OnEmemySpotted()
+    public void OnEnemySpotted(Enemy spottedEnemy)
     {
-        // Forçar o fim da ação atual
-        OnActionEnded();
+        if (ShouldStartChasingEnemy(spottedEnemy, false))
+        {
+            nearestEnemy = spottedEnemy;
+            ForceNewAction(AIAction.WALKTOATTACK);
+        }
     }
-    */
 
     // Chamado por inimigos ao acertar um ataque
     public void TakeDamage(float dmg, Enemy source)
     {
-        nearestEnemy = source;
-        
         ai_status.DecrementHealth(dmg);
 
-        if (ShouldStartChasingEnemy())
+        if (ShouldStartChasingEnemy(source, true))
+        {
+            nearestEnemy = source;
             ForceNewAction(AIAction.WALKTOATTACK);
+        }
     }
 
     #region DECISIONS
@@ -185,7 +186,7 @@ public class AIHead : MonoBehaviour
     virtual protected bool ShouldStopSleeping() { return false; }
 
     // Decidir se deveria PARAR O QUE ESTA FAZENDO para ir até um ataque
-    virtual protected bool ShouldStartChasingEnemy() { return false; }
+    virtual protected bool ShouldStartChasingEnemy(Enemy source, bool tookDamage) { return false; }
 
     #endregion
 
@@ -329,6 +330,8 @@ public class AIHead : MonoBehaviour
             OnActionEnded();
             return;
         }
+
+        ai_combat.StartAttackTimer();
     }
 
     private void Behaviour_attacking()

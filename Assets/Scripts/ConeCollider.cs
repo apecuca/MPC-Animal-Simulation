@@ -17,5 +17,8 @@ public class ConeCollider : MonoBehaviour
         if (col.transform.CompareTag("Food"))
             ai_head.OnFoodSourceDetected(col.transform);
 
+        if (col.transform.CompareTag("Enemy"))
+            ai_head.OnEnemySpotted(col.gameObject.GetComponent<Enemy>());
+
     }
 }

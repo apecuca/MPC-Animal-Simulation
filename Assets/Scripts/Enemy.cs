@@ -11,7 +11,7 @@ public class Enemy : MonoBehaviour
     private float atkTimer;
     private AIHead target;
     private Rigidbody2D rb;
-    private float health;
+    public float health { get; private set; }
 
     private void Awake()
     {

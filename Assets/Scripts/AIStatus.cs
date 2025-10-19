@@ -17,6 +17,7 @@ public class AIStatus : MonoBehaviour
 
     [Header("Health properties")]
     [SerializeField] private float healthRecovery;
+    [SerializeField] private float minHungerToHPRecovery;
 
     [Header("Sleep properties")]
     [SerializeField] private float sleepPerSecond;
@@ -54,7 +55,7 @@ public class AIStatus : MonoBehaviour
 
         if (hunger <= 0.0f)
             DecrementHealth(starvedDamage * Time.deltaTime);
-        else if (hunger > 0.0f && sleep > 0.0f)
+        else if (hunger >= minHungerToHPRecovery && sleep > 0.0f)
             IncrementHealth(healthRecovery * Time.deltaTime);
 
         DecrementHunger(hungerPerSecond * Time.deltaTime);

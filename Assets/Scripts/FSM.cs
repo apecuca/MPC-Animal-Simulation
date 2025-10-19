@@ -31,8 +31,13 @@ public class FSM : AIHead
                 break;
 
             case AIAction.WALKTOATTACK:
-                if (nearestEnemy && ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
-                    newAction = AIAction.ATTACKING;
+                if (nearestEnemy && (nearestEnemy.health > 0))
+                {
+                    if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+                        newAction = AIAction.ATTACKING;
+                    else
+                        newAction = AIAction.WALKTOATTACK;
+                }
                 else if (ai_status.sleep < ai_status.hunger)
                     newAction = AIAction.SLEEPING;
                 else
@@ -40,8 +45,13 @@ public class FSM : AIHead
                 break;
 
             case AIAction.ATTACKING:
-                if (nearestEnemy && !ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
-                    newAction = AIAction.WALKTOATTACK;
+                if (nearestEnemy && (nearestEnemy.health > 0))
+                {
+                    if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+                        newAction = AIAction.ATTACKING;
+                    else
+                        newAction = AIAction.WALKTOATTACK;
+                }
                 else if (ai_status.sleep < ai_status.hunger)
                     newAction = AIAction.SLEEPING;
                 else
@@ -64,12 +74,43 @@ public class FSM : AIHead
         return false;
     }
 
-    protected override bool ShouldStartChasingEnemy()
+    protected override bool ShouldStartChasingEnemy(Enemy source, bool tookDamage)
     {
-        if (!nearestEnemy) return false;
-        if (currentAction == AIAction.ATTACKING) return false;
-        if (currentAction == AIAction.WALKTOATTACK) return false;
-        if (!ai_combat.IsInAtkRange(parent, nearestEnemy.transform)) return true;
+        // Dar os motivos para NÃO seguir
+        // Se nenhum for verdadeiro, vai
+
+        // Erro, nenhuma fonte
+        if (!source) return false;
+
+        // Caso já tenha um inimigo perto
+        if (nearestEnemy != null)
+        {
+            float currentDist = Vector2.Distance(parent.position, nearestEnemy.transform.position);
+            float newDist = Vector2.Distance(parent.position, source.transform.position);
+
+            // Fonte antiga é mais favorável
+            if (source.health >= nearestEnemy.health &&
+                newDist > currentDist)
+                return false;
+
+            // Já está em combate
+            if (currentAction == AIAction.ATTACKING || currentAction == AIAction.WALKTOATTACK)
+                return false;
+        }
+
+        // Continuar dormindo se não tomou dano
+        if (currentAction == AIAction.SLEEPING)
+        {
+            if (!tookDamage)
+                return false;
+        }
+
+        // Continuar comendo se estiver quase acabando
+        if (currentAction == AIAction.EATING)
+        {
+            if (eatingTimer <= timeLeftToContinueEating)
+                return false;
+        }
 
         return true;
     }

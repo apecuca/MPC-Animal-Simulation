@@ -767,11 +767,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f866593be3bfaf44197885e3d2e77b89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testingHunger: 1
+  testingHunger: 0
   testingSleep: 0
   testingEnemy: 0
   startingTimeScale: 15
-  foodPerAxis: 8
+  foodPerAxis: 7
   wallDistance: 5
   foodRandOffset: 5
   timeBetweenEnemies: 20
@@ -2065,8 +2065,9 @@ MonoBehaviour:
   hungerPerSecond: 1.66
   starvedDamage: 3.2
   healthRecovery: 2.4
-  sleepPerSecond: 0.6
-  sleepRecovery: 1.25
+  minHungerToHPRecovery: 20
+  sleepPerSecond: 0.5
+  sleepRecovery: 1
   ai_head: {fileID: 1599147341}
   sld_hunger: {fileID: 879175469}
   sld_health: {fileID: 507835310}

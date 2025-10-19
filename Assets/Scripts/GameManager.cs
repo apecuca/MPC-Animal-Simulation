@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public static Vector2 mapSize { get; private set; } = new Vector2(75.0f, 75.0f);
+    public static Vector2 mapSize { get; private set; } = new Vector2(100.0f, 100.0f);
 
     [Header("Tests")]
     [SerializeField] private bool testingHunger;
@@ -59,6 +59,12 @@ public class GameManager : MonoBehaviour
         enemySpawnTimer -= Time.deltaTime;
         if (enemySpawnTimer <= 0.0f)
             SpawnEnemy();
+
+        if (Input.GetKeyDown(KeyCode.R))
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+        if (Input.GetKeyDown(KeyCode.E))
+            SpawnEnemy(true);
     }
 
     private void GenerateFood()
@@ -82,7 +88,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SpawnEnemy()
+    private void SpawnEnemy(bool onMousePosition = false)
     {
         bool spawnHorizontal = Random.value > 0.5f;
         Vector3 viewportPos = Vector3.zero;
@@ -102,7 +108,9 @@ public class GameManager : MonoBehaviour
 
         // Converter de Viewport (0–1) para coordenadas do mundo
         Vector2 spawnPos = Camera.main.ViewportToWorldPoint(viewportPos);
-        if (testingEnemy || testingHunger)
+        if (onMousePosition)
+            spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if ((testingEnemy || testingHunger) && !onMousePosition)
         {
             if (!testingHunger && currentTestEnemy == null)
                 currentTestEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);

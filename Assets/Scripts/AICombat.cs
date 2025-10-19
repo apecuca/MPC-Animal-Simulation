@@ -20,6 +20,11 @@ public class AICombat : MonoBehaviour
         return (Vector2.Distance(parent.position, target.position) <= atkRange);
     }
 
+    public void StartAttackTimer()
+    {
+        atkTimer = atkCooldown;
+    }
+
     // Retorna se o ataque teve sucesso
     public bool Attack(Transform parent, Enemy target)
     {
