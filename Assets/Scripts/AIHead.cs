@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum AIAction
 {
@@ -25,18 +26,32 @@ public class AIHead : MonoBehaviour
 
     // SEARCHINGFOOD
     protected bool goingBackIn = true;
+    public Transform nearestFoodSource { get; private set; } = null;
+    public Enemy nearestEnemy { get; private set; } = null;
 
     // EATING
     protected float eatingDist = 0.75f;
-    protected float eatDuration = 2.0f;
+    protected float eatDuration = 10.0f;
     protected float eatingTimer = 0.0f;
+    protected float dangerousHunger = 60.0f;
+
+    // SLEEPING
+    protected float satisfyingSleep = 90.0f;
+
+    // COMBAT
+    protected float enemyDamage = 2.0f;
 
     [Header("Assignables")]
-    [SerializeField] protected ConeCollider visionCone;
     protected Transform parent;
 
-    virtual protected void Awake()
+    public static AIHead instance { get; private set; }
+
+    private void Awake()
     {
+        if (instance != null && instance != this)
+            Destroy(instance.gameObject);
+        instance = this;
+
         ai_movement = GetComponentInChildren<AIMovement>();
         ai_status = GetComponentInChildren<AIStatus>();
         ai_combat = GetComponentInChildren<AICombat>();
@@ -46,13 +61,18 @@ public class AIHead : MonoBehaviour
 
     private void Start()
     {
-        ForceNewAction(AIAction.SEARCHINGFOOD);
+        OnActionEnded();
     }
 
     virtual protected void Update()
     {
         ManageBehaviour();
+
+        if (Input.GetKeyDown(KeyCode.R))
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
+    #region MANAGEMENT
 
     private void ManageBehaviour()
     {
@@ -81,8 +101,12 @@ public class AIHead : MonoBehaviour
 
     protected void ForceNewAction(AIAction newAction)
     {
+        if (currentAction == AIAction.DEAD)
+            return;
+
         // Limpar remanescentes da ação anterior
-        ClearLastAction();
+        if (newAction != currentAction)
+            ClearLastAction();
 
         // Preparar nova ação
         switch (newAction)
@@ -128,12 +152,44 @@ public class AIHead : MonoBehaviour
     // Finalizar a simulação
     public void OnLifeEnded()
     {
-
+        GameManager.instance.OnAIDied();
+        ForceNewAction(AIAction.DEAD);
     }
+
+    /*
+    public void OnEmemySpotted()
+    {
+        // Forçar o fim da ação atual
+        OnActionEnded();
+    }
+    */
+
+    // Chamado por inimigos ao acertar um ataque
+    public void TakeDamage(float dmg, Enemy source)
+    {
+        nearestEnemy = source;
+        
+        ai_status.DecrementHealth(dmg);
+
+        if (ShouldStartChasingEnemy())
+            ForceNewAction(AIAction.WALKTOATTACK);
+    }
+
+    #region DECISIONS
 
     // O objetivo é que as classes derivadas tenham a própria
     // tomada de decisões, que começa e termina aqui
     virtual protected AIAction DecideNewAction() { return AIAction.NONE; }
+
+    // Decidir se deveria ou não parar de dormir
+    virtual protected bool ShouldStopSleeping() { return false; }
+
+    // Decidir se deveria PARAR O QUE ESTA FAZENDO para ir até um ataque
+    virtual protected bool ShouldStartChasingEnemy() { return false; }
+
+    #endregion
+
+    #endregion
 
     #region BEHAVIOURS/NEW ACTIONS
 
@@ -173,29 +229,31 @@ public class AIHead : MonoBehaviour
         {
             // Finalizar ação, saiu e não achou comida
             if (!goingBackIn)
-            {
-                //OnActionEnded();
-                ForceNewAction(AIAction.SEARCHINGFOOD);
-            }
+                OnActionEnded();
         }
         else
             goingBackIn = false;
 
         // Found food
-        if (visionCone.nearestFoodSource)
+        if (nearestFoodSource)
         {
-            if (Vector3.Distance(parent.position, visionCone.nearestFoodSource.position) > eatingDist)
-                ai_movement.SetMoveDir((visionCone.nearestFoodSource.position - parent.position).normalized);
+            if (Vector3.Distance(parent.position, nearestFoodSource.position) > eatingDist)
+                ai_movement.SetMoveDir((nearestFoodSource.position - parent.position).normalized);
             else
-                ForceNewAction(AIAction.EATING);
-                //OnActionEnded();
+                OnActionEnded();
         }
     }
 
     // Comer
     private void NewAction_eating()
     {
-        lockedObject = visionCone.nearestFoodSource;
+        if (nearestFoodSource == null)
+        {
+            OnActionEnded();
+            return;
+        }
+
+        lockedObject = nearestFoodSource;
         eatingTimer = eatDuration;
     }
 
@@ -205,8 +263,7 @@ public class AIHead : MonoBehaviour
         {
             ai_status.IncrementHunger(ai_status.hungerPerFood);
             Destroy(lockedObject.gameObject);
-            ForceNewAction(AIAction.SEARCHINGFOOD);
-            //OnActionEnded();
+            OnActionEnded();
             return;
         }
 
@@ -221,29 +278,63 @@ public class AIHead : MonoBehaviour
 
     private void Behaviour_sleeping()
     {
+        if (ShouldStopSleeping())
+        {
+            OnActionEnded();
+            return;
+        }
 
+        ai_status.RecoverSleep();
     }
 
     // Andar até o ataque
     private void NewAction_walkToAttack()
     {
+        if (!nearestEnemy)
+        {
+            OnActionEnded();
+            return;
+        }    
 
+        if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        {
+            OnActionEnded();
+            return;
+        }
     }
 
     private void Behaviour_walkToAttack()
     {
+        if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        {
+            OnActionEnded();
+            return;
+        }
 
+        Vector2 newDir = (nearestEnemy.transform.position - parent.position).normalized;
+        ai_movement.SetMoveDir(newDir);
     }
 
     // Atacar
     private void NewAction_attacking()
     {
+        if (!nearestEnemy)
+        {
+            OnActionEnded();
+            return;
+        }
 
+        if (!ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        {
+            OnActionEnded();
+            return;
+        }
     }
 
     private void Behaviour_attacking()
     {
-
+        if (ai_combat.Attack(parent, nearestEnemy))
+            OnActionEnded();
     }
 
     #endregion
@@ -259,6 +350,19 @@ public class AIHead : MonoBehaviour
             return true;
 
         return false;
+    }
+
+    public void OnFoodSourceDetected(Transform source)
+    {
+        if (nearestFoodSource)
+        {
+            // Substituir se a fonte nova for mais perto
+            float ogDist = Vector2.Distance(nearestFoodSource.position, parent.position);
+            if (ogDist > Vector2.Distance(source.position, parent.position))
+                nearestFoodSource = source;
+        }
+        else
+            nearestFoodSource = source;
     }
 
     #endregion

@@ -1,8 +1,18 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     public static Vector2 mapSize { get; private set; } = new Vector2(75.0f, 75.0f);
+
+    [Header("Tests")]
+    [SerializeField] private bool testingHunger;
+    [SerializeField] private bool testingSleep;
+    [SerializeField] private bool testingEnemy;
+    private GameObject currentTestEnemy;
+
+    [Header("Simulation")]
+    [SerializeField] private float startingTimeScale;
 
     [Header("Food")]
     [SerializeField] private int foodPerAxis;
@@ -10,13 +20,45 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float wallDistance;
     [SerializeField] private float foodRandOffset;
 
+    [Header("Enemies")]
+    [SerializeField] private float timeBetweenEnemies = 5.0f;
+    [SerializeField] private float enemySpawnPlusDist = 5.0f;
+    private float enemySpawnTimer = 0.0f;
+    //private List<>
+
     [Header("Assignables")]
+    [SerializeField] private AIStatus ai_status;
     [SerializeField] private GameObject foodPrefab;
+    [SerializeField] private GameObject enemyPrefab;
     [SerializeField] private Transform foodParent;
+
+    public static GameManager instance { get; private set; }
+
+    private void Awake()
+    {
+        if (instance)
+            Destroy(instance.gameObject);
+        instance = this;
+
+        enemySpawnTimer = timeBetweenEnemies;
+    }
 
     private void Start()
     {
-        GenerateFood();
+        if (!testingHunger)
+            GenerateFood();
+
+        if (testingSleep)
+            ai_status.SetHungerPerSecond(0.0f);
+
+        Time.timeScale = startingTimeScale;
+    }
+
+    private void Update()
+    {
+        enemySpawnTimer -= Time.deltaTime;
+        if (enemySpawnTimer <= 0.0f)
+            SpawnEnemy();
     }
 
     private void GenerateFood()
@@ -38,6 +80,42 @@ public class GameManager : MonoBehaviour
                 Instantiate(foodPrefab, posToSpawn, Quaternion.identity, foodParent);
             }
         }
+    }
+
+    private void SpawnEnemy()
+    {
+        bool spawnHorizontal = Random.value > 0.5f;
+        Vector3 viewportPos = Vector3.zero;
+
+        if (spawnHorizontal)
+        {
+            // Fora na esquerda ou direita
+            viewportPos.x = Random.value < 0.5f ? -enemySpawnPlusDist : 1 + enemySpawnPlusDist;
+            viewportPos.y = Random.Range(0f, 1f);
+        }
+        else
+        {
+            // Fora em cima ou embaixo
+            viewportPos.y = Random.value < 0.5f ? -enemySpawnPlusDist : 1 + enemySpawnPlusDist;
+            viewportPos.x = Random.Range(0f, 1f);
+        }
+
+        // Converter de Viewport (0–1) para coordenadas do mundo
+        Vector2 spawnPos = Camera.main.ViewportToWorldPoint(viewportPos);
+        if (testingEnemy || testingHunger)
+        {
+            if (!testingHunger && currentTestEnemy == null)
+                currentTestEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        }
+        else
+            Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        
+        enemySpawnTimer = timeBetweenEnemies;
+    }
+
+    public void OnAIDied()
+    {
+        this.enabled = false;
     }
 
     private void OnDrawGizmos()

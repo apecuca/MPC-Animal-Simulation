@@ -6,10 +6,18 @@ public class AIMovement : MonoBehaviour
 
     [Header("Properties")]
     [SerializeField] private float moveSpeed;
+    [SerializeField] private float sleepyMoveSpeed;
+
+    private AIStatus ai_status;
 
     [Header("Assignables")]
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private ConeCollider coneCollider;
+
+    private void Awake()
+    {
+        ai_status = GetComponent<AIStatus>();
+    }
 
     public void SetMoveDir(Vector2 dir)
     {
@@ -17,7 +25,8 @@ public class AIMovement : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
         else
         {
-            rb.linearVelocity = dir * moveSpeed;
+            float currentMvSpeed = ai_status.IsSleepy() ? sleepyMoveSpeed : moveSpeed;
+            rb.linearVelocity = dir * currentMvSpeed;
             lastRegisteredDir = dir;
             coneCollider.UpdateRotation(dir);
         }
