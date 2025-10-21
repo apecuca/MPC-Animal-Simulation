@@ -94,7 +94,8 @@ public class FSM : AIHead
                 return false;
 
             // Já está em combate
-            if (currentAction == AIAction.ATTACKING || currentAction == AIAction.WALKTOATTACK)
+            if ((currentAction == AIAction.ATTACKING || currentAction == AIAction.WALKTOATTACK) &&
+                nearestEnemy == source)
                 return false;
         }
 
@@ -108,7 +109,7 @@ public class FSM : AIHead
         // Continuar comendo se estiver quase acabando
         if (currentAction == AIAction.EATING)
         {
-            if (eatingTimer <= timeLeftToContinueEating)
+            if (ai_status.hunger <= dangerousHunger)
                 return false;
         }
 

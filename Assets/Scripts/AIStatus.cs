@@ -11,18 +11,18 @@ public class AIStatus : MonoBehaviour
     public float maxStatusValue { get; private set; } = 100.0f;
 
     [Header("Hunger properties")]
-    [SerializeField] private float hungerPerSecond;
-    [SerializeField] private float starvedDamage;
-    public float hungerPerFood { get; private set; } = 20.0f;
+    public float starvedDamage { get; private set; } = 3.2f;
+    public float hungerDecay { get; private set; } = 1.66f;
+    public float hungerPerFood { get; private set; } = 2.0f; // Por segundo
 
     [Header("Health properties")]
-    [SerializeField] private float healthRecovery;
-    [SerializeField] private float minHungerToHPRecovery;
+    public float healthRecovery { get; private set; } = 2.4f;
+    public float minHungerToHPRecovery { get; private set; } = 20.0f;
 
     [Header("Sleep properties")]
-    [SerializeField] private float sleepPerSecond;
+    public float sleepDecay { get; private set; } = 0.5f;
     [Tooltip("While sleeping")]
-    [SerializeField] private float sleepRecovery;
+    public float sleepRecovery { get; private set; } = 1.0f;
 
     [Header("Assignables")]
     [SerializeField] private AIHead ai_head;
@@ -58,8 +58,8 @@ public class AIStatus : MonoBehaviour
         else if (hunger >= minHungerToHPRecovery && sleep > 0.0f)
             IncrementHealth(healthRecovery * Time.deltaTime);
 
-        DecrementHunger(hungerPerSecond * Time.deltaTime);
-        DecrementSleep(sleepPerSecond * Time.deltaTime);
+        DecrementHunger(hungerDecay * Time.deltaTime);
+        DecrementSleep(sleepDecay * Time.deltaTime);
     }
 
     /// Gerenciamento dos status
@@ -97,7 +97,8 @@ public class AIStatus : MonoBehaviour
 
     public void RecoverSleep()
     {
-        sleep = ClampStatusValue(sleep, sleepRecovery * Time.deltaTime * Time.timeScale);
+        // Compensar pelo decay
+        sleep = ClampStatusValue(sleep, (sleepRecovery + sleepDecay) * Time.deltaTime);
 
         UpdateSleepSlider();
     }
@@ -147,6 +148,6 @@ public class AIStatus : MonoBehaviour
 
     public void SetHungerPerSecond(float value)
     {
-        hungerPerSecond = value;
+        hungerDecay = value;
     }
 }

@@ -36,11 +36,18 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        if (instance)
-            Destroy(instance.gameObject);
-        instance = this;
+        if (instance != null)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+        else
+            instance = this;
 
         enemySpawnTimer = timeBetweenEnemies;
+
+        // Config simulation
+        Application.targetFrameRate = 120;
     }
 
     private void Start()
@@ -52,6 +59,8 @@ public class GameManager : MonoBehaviour
             ai_status.SetHungerPerSecond(0.0f);
 
         Time.timeScale = startingTimeScale;
+
+        SimManager.instance.StartWatching();
     }
 
     private void Update()
@@ -124,6 +133,11 @@ public class GameManager : MonoBehaviour
     public void OnAIDied()
     {
         this.enabled = false;
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (GameObject e in enemies)
+            e.SetActive(false);
+
+        SimManager.instance.OnSimStepEnded();
     }
 
     private void OnDrawGizmos()

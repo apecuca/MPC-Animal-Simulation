@@ -1,5 +1,4 @@
 using UnityEngine;
-using static Unity.VisualScripting.Member;
 
 public enum AIAction
 {
@@ -26,13 +25,13 @@ public class AIHead : MonoBehaviour
 
     // SEARCHINGFOOD
     protected bool goingBackIn = true;
-    public Transform nearestFoodSource { get; private set; } = null;
+    public Food nearestFoodSource { get; private set; } = null;
     public Enemy nearestEnemy { get; private set; } = null;
 
     // EATING
     protected float eatingDist = 0.75f;
-    protected float eatDuration = 10.0f;
-    protected float eatingTimer = 0.0f;
+    //protected float eatDuration = 10.0f;
+    //protected float eatingTimer = 0.0f;
     protected float dangerousHunger = 60.0f;
     // No caso de dano
     protected float timeLeftToContinueEating = 1.0f;
@@ -134,8 +133,8 @@ public class AIHead : MonoBehaviour
                 break;
 
             case AIAction.EATING: 
-                lockedObject = null;
-                eatingTimer = 0.0f;
+                //lockedObject = null;
+                //eatingTimer = 0.0f;
                 break;
 
             case AIAction.SLEEPING: break;
@@ -157,11 +156,11 @@ public class AIHead : MonoBehaviour
 
     public void OnEnemySpotted(Enemy spottedEnemy)
     {
-        if (ShouldStartChasingEnemy(spottedEnemy, false))
-        {
+        if (IsNewEnemyCloser(spottedEnemy))
             nearestEnemy = spottedEnemy;
+
+        if (ShouldStartChasingEnemy(nearestEnemy, false))
             ForceNewAction(AIAction.WALKTOATTACK);
-        }
     }
 
     // Chamado por inimigos ao acertar um ataque
@@ -169,9 +168,12 @@ public class AIHead : MonoBehaviour
     {
         ai_status.DecrementHealth(dmg);
 
+        if (IsNewEnemyCloser(source))
+            nearestEnemy = source;
+
         if (ShouldStartChasingEnemy(source, true))
         {
-            nearestEnemy = source;
+            lockedObject = source.transform;
             ForceNewAction(AIAction.WALKTOATTACK);
         }
     }
@@ -238,8 +240,8 @@ public class AIHead : MonoBehaviour
         // Found food
         if (nearestFoodSource)
         {
-            if (Vector3.Distance(parent.position, nearestFoodSource.position) > eatingDist)
-                ai_movement.SetMoveDir((nearestFoodSource.position - parent.position).normalized);
+            if (Vector3.Distance(parent.position, nearestFoodSource.transform.position) > eatingDist)
+                ai_movement.SetMoveDir((nearestFoodSource.transform.position - parent.position).normalized);
             else
                 OnActionEnded();
         }
@@ -254,21 +256,32 @@ public class AIHead : MonoBehaviour
             return;
         }
 
-        lockedObject = nearestFoodSource;
-        eatingTimer = eatDuration;
+        lockedObject = nearestFoodSource.transform;
     }
 
     private void Behaviour_eating()
     {
-        if (eatingTimer <= 0.0f)
+        // Condições para erro
+        if (!nearestFoodSource ||
+            lockedObject != nearestFoodSource.transform)
         {
-            ai_status.IncrementHunger(ai_status.hungerPerFood);
-            Destroy(lockedObject.gameObject);
             OnActionEnded();
             return;
         }
 
-        eatingTimer -= Time.deltaTime * Time.timeScale;
+        // Se voltar falso, terminou de comer
+        if (!nearestFoodSource.Eat())
+        {
+            nearestFoodSource = null;
+            lockedObject = null;
+            OnActionEnded();
+            return;
+        }
+        else
+        {
+            // Compensar pelo decay
+            ai_status.IncrementHunger((ai_status.hungerDecay + ai_status.hungerPerFood) * Time.deltaTime);
+        }
     }
 
     // Dormir
@@ -291,13 +304,15 @@ public class AIHead : MonoBehaviour
     // Andar até o ataque
     private void NewAction_walkToAttack()
     {
-        if (!nearestEnemy)
+        if (nearestEnemy == null)
         {
             OnActionEnded();
             return;
-        }    
+        }
 
-        if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        lockedObject = nearestEnemy.transform; 
+
+        if (ai_combat.IsInAtkRange(parent, lockedObject))
         {
             OnActionEnded();
             return;
@@ -306,7 +321,7 @@ public class AIHead : MonoBehaviour
 
     private void Behaviour_walkToAttack()
     {
-        if (ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        if (ai_combat.IsInAtkRange(parent, lockedObject))
         {
             OnActionEnded();
             return;
@@ -319,13 +334,15 @@ public class AIHead : MonoBehaviour
     // Atacar
     private void NewAction_attacking()
     {
-        if (!nearestEnemy)
+        if (nearestEnemy == null)
         {
             OnActionEnded();
             return;
         }
 
-        if (!ai_combat.IsInAtkRange(parent, nearestEnemy.transform))
+        lockedObject = nearestEnemy.transform;
+
+        if (!ai_combat.IsInAtkRange(parent, lockedObject))
         {
             OnActionEnded();
             return;
@@ -336,6 +353,9 @@ public class AIHead : MonoBehaviour
 
     private void Behaviour_attacking()
     {
+        if (lockedObject != nearestEnemy.transform)
+            OnActionEnded();
+
         if (ai_combat.Attack(parent, nearestEnemy))
             OnActionEnded();
     }
@@ -360,12 +380,23 @@ public class AIHead : MonoBehaviour
         if (nearestFoodSource)
         {
             // Substituir se a fonte nova for mais perto
-            float ogDist = Vector2.Distance(nearestFoodSource.position, parent.position);
+            float ogDist = Vector2.Distance(nearestFoodSource.transform.position, parent.position);
             if (ogDist > Vector2.Distance(source.position, parent.position))
-                nearestFoodSource = source;
+                nearestFoodSource = source.GetComponent<Food>();
         }
         else
-            nearestFoodSource = source;
+            nearestFoodSource = source.GetComponent<Food>();
+    }
+
+    public bool IsNewEnemyCloser(Enemy newEnemy)
+    {
+        if (nearestEnemy == null)
+            return true;
+
+        float curDist = Vector2.Distance(nearestEnemy.transform.position, parent.transform.position);
+        float newDist = Vector2.Distance(newEnemy.transform.position, parent.transform.position);
+
+        return newDist < curDist;
     }
 
     #endregion
