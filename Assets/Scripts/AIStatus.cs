@@ -12,7 +12,7 @@ public class AIStatus : MonoBehaviour
 
     [Header("Hunger properties")]
     public float starvedDamage { get; private set; } = 3.2f;
-    public float hungerDecay { get; private set; } = 1.66f;
+    public float hungerDecay { get; private set; } = 1.25f;
     public float hungerPerFood { get; private set; } = 2.0f; // Por segundo
 
     [Header("Health properties")]

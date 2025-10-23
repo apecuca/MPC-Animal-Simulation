@@ -36,7 +36,6 @@ public class MPC : AIHead
     [SerializeField] private float wSleep;
     [SerializeField] private float wHealth;
     [SerializeField] private float wEnemy;
-    [SerializeField] private float wSwitch;
 
     // Tomada de decisões da mpc
     override protected AIAction DecideNewAction()
@@ -61,8 +60,6 @@ public class MPC : AIHead
             }
         }
 
-        //Debug.Log($"Escolheu {bestAction} (custo={bestCost})");
-
         return bestAction;
     }
 
@@ -74,8 +71,8 @@ public class MPC : AIHead
         for (int t = 0; t < horizon; t++)
         {
             // Simular decay
-            sim.hunger = AIStatus.ClampStatusValue(sim.hunger, ai_status.hungerDecay * Time.deltaTime);
-            sim.sleep = AIStatus.ClampStatusValue(sim.sleep, ai_status.sleepDecay * Time.deltaTime);
+            sim.hunger = AIStatus.ClampStatusValue(sim.hunger, -(ai_status.hungerDecay * Time.deltaTime));
+            sim.sleep = AIStatus.ClampStatusValue(sim.sleep, -(ai_status.sleepDecay * Time.deltaTime));
 
             // Penalizar por fome
             if (sim.hunger <= 0.0f)
@@ -108,12 +105,9 @@ public class MPC : AIHead
         float max = sim.max;
 
         c += wHunger * Mathf.Pow((max - sim.hunger) / max, 2);
-        c += wSleep * (sim.sleep >= (max - 1.0f) ? 0.0f : Mathf.Pow((max - sim.sleep) / max, 2));
+        c += wSleep * (sim.sleep >= (max - 1.0f) ? 99999.0f : Mathf.Pow((max - sim.sleep) / max, 2));
         c += wHealth * Mathf.Pow((max - sim.health) / max, 2);
         c += wEnemy * (nearestEnemy == null ? 0.0f : 1.0f);
-
-        if (testAction != currentAction)
-            c += wSwitch;
 
         return c;
     }

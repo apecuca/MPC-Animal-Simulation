@@ -419,10 +419,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: SimWatcher
       objectReference: {fileID: 0}
-    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
-      propertyPath: maxSteps
-      value: 5
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

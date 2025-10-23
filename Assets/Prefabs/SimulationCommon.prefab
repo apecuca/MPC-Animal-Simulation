@@ -501,6 +501,7 @@ MonoBehaviour:
   testingHunger: 0
   testingSleep: 0
   testingEnemy: 0
+  preventEnemySpawn: 0
   startingTimeScale: 15
   foodPerAxis: 7
   wallDistance: 5
