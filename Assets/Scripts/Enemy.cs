@@ -73,4 +73,9 @@ public class Enemy : MonoBehaviour
     {
         return (Vector2.Distance(transform.position, target.transform.position) <= atkRange);
     }
+
+    public float GetAtkDmg()
+    {
+        return damage;
+    }
 }

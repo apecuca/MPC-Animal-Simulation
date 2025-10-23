@@ -31,4 +31,9 @@ public class AIMovement : MonoBehaviour
             coneCollider.UpdateRotation(dir);
         }
     }
+
+    public float GetMvSpeed()
+    {
+        return moveSpeed;
+    }
 }

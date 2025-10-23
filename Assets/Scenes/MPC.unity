@@ -171,6 +171,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SimWatcher
       objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: maxSteps
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -480,11 +484,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   horizon: 5
   gamma: 0.85
-  wHunger: 3
-  wSleep: 1
-  wHealth: 3.25
-  wEnemy: 4
-  wSwitch: 0.1
+  wHunger: 10
+  wSleep: 0.0001
+  wHealth: 20
+  wEnemy: 14
+  wSwitch: 0
 --- !u!4 &1364102189
 Transform:
   m_ObjectHideFlags: 0
@@ -577,8 +581,24 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 87929945}
     - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
+      propertyPath: testingEnemy
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
+      propertyPath: testingSleep
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
+      propertyPath: testingHunger
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
+      propertyPath: preventEnemySpawn
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
       propertyPath: startingTimeScale
-      value: 1
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 6463383137281711696, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
       propertyPath: m_Name
@@ -610,6 +630,6 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 6038327139234413108}
-  - {fileID: 1212208786}
   - {fileID: 1364102189}
+  - {fileID: 1212208786}
   - {fileID: 63522358}

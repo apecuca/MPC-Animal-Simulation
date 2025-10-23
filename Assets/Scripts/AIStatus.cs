@@ -8,7 +8,7 @@ public class AIStatus : MonoBehaviour
     public float sleep { get; private set; }
     public float hunger { get; private set; }
 
-    public float maxStatusValue { get; private set; } = 100.0f;
+    public static readonly float maxStatusValue = 100.0f;
 
     [Header("Hunger properties")]
     public float starvedDamage { get; private set; } = 3.2f;
@@ -20,7 +20,7 @@ public class AIStatus : MonoBehaviour
     public float minHungerToHPRecovery { get; private set; } = 20.0f;
 
     [Header("Sleep properties")]
-    public float sleepDecay { get; private set; } = 0.5f;
+    public float sleepDecay { get; private set; } = 0.75f;
     [Tooltip("While sleeping")]
     public float sleepRecovery { get; private set; } = 1.0f;
 
@@ -136,7 +136,7 @@ public class AIStatus : MonoBehaviour
     }
 
     // General
-    private float ClampStatusValue(float original, float extra)
+    public static float ClampStatusValue(float original, float extra)
     {
         return Mathf.Clamp(original + extra, 0.0f, maxStatusValue);
     }

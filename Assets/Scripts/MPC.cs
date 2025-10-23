@@ -13,11 +13,11 @@ struct SimulatedStatus
             health = real.health;
             sleep = real.sleep;
             hunger = real.hunger;
-            max = real.maxStatusValue;
+            max = AIStatus.maxStatusValue;
         }
         else
         {
-            max = real.maxStatusValue;
+            max = AIStatus.maxStatusValue;
             health = max;
             sleep = max;
             hunger = max;
@@ -41,11 +41,10 @@ public class MPC : AIHead
     // Tomada de decisões da mpc
     override protected AIAction DecideNewAction()
     {
-        AIAction newAction = AIAction.NONE;
-
         if (currentAction == AIAction.DEAD || ai_status.health <= 0f)
             return AIAction.DEAD;
 
+        AIAction originalAction = currentAction;
         AIAction bestAction = AIAction.SEARCHINGFOOD;
         float bestCost = float.MaxValue;
 
@@ -62,9 +61,9 @@ public class MPC : AIHead
             }
         }
 
-        Debug.Log($"[MPC] hunger={ai_status.hunger:F1}, sleep={ai_status.sleep:F1}, health={ai_status.health:F1} \nEscolheu {bestAction} (custo={bestCost:F2})");
+        //Debug.Log($"Escolheu {bestAction} (custo={bestCost})");
 
-        return newAction;
+        return bestAction;
     }
 
     private float SimulateFuture(AIAction testAction)
@@ -75,15 +74,22 @@ public class MPC : AIHead
         for (int t = 0; t < horizon; t++)
         {
             // Simular decay
-            sim.hunger -= ai_status.hungerDecay * Time.deltaTime;
-            sim.sleep -= ai_status.sleepDecay * Time.deltaTime;
+            sim.hunger = AIStatus.ClampStatusValue(sim.hunger, ai_status.hungerDecay * Time.deltaTime);
+            sim.sleep = AIStatus.ClampStatusValue(sim.sleep, ai_status.sleepDecay * Time.deltaTime);
+
+            // Penalizar por fome
             if (sim.hunger <= 0.0f)
-                sim.health -= ai_status.starvedDamage * Time.deltaTime;
+                sim.health = AIStatus.ClampStatusValue(sim.health, -(ai_status.starvedDamage * Time.deltaTime));
+
+            // Regenerar se os status estiverem bons
             if (sim.hunger >= ai_status.minHungerToHPRecovery && sim.sleep > 0)
-                sim.health = Mathf.Clamp(sim.health + ai_status.healthRecovery * Time.deltaTime, 0.0f, sim.max);
+                sim.health = AIStatus.ClampStatusValue(sim.health, ai_status.healthRecovery * Time.deltaTime);
+
+            // Simular situações específicas
+            SimulateSituations(ref sim, testAction, t); 
 
             // Adicionar ao custo
-            totalCost += StepCost(ref sim, testAction);
+            totalCost += Mathf.Pow(gamma, t) * StepCost(ref sim, testAction);
 
             // Horizon causa a morte
             if (sim.health <= 0.0f)
@@ -102,12 +108,9 @@ public class MPC : AIHead
         float max = sim.max;
 
         c += wHunger * Mathf.Pow((max - sim.hunger) / max, 2);
-        c += wSleep * Mathf.Pow((max - sim.sleep) / max, 2);
+        c += wSleep * (sim.sleep >= (max - 1.0f) ? 0.0f : Mathf.Pow((max - sim.sleep) / max, 2));
         c += wHealth * Mathf.Pow((max - sim.health) / max, 2);
-        c += wEnemy * (nearestEnemy != null ? 1.0f : 0.0f);
-
-        // Extra costs
-        c += testAction == AIAction.EATING ? 1 : 2;
+        c += wEnemy * (nearestEnemy == null ? 0.0f : 1.0f);
 
         if (testAction != currentAction)
             c += wSwitch;
@@ -115,274 +118,43 @@ public class MPC : AIHead
         return c;
     }
 
-    /*
-    public float StepCost(in PetState s, IAction current, IAction prev)
+    private void SimulateSituations(ref SimulatedStatus sim, AIAction action, int iteration)
     {
-        float hungerCost = quadraticPenalties ? Mathf.Pow(s.hunger/100f,2) : s.hunger/100f;
-        float energyCost = quadraticPenalties ? Mathf.Pow((100f - s.energy)/100f,2) : (100f - s.energy)/100f;
-        float hygieneCost= quadraticPenalties ? Mathf.Pow((100f - s.hygiene)/100f,2) : (100f - s.hygiene)/100f;
-        float ratsCost   = s.activeRats; // já inteiro
-        float healthCost = quadraticPenalties ? Mathf.Pow((100f - s.health)/100f,2) : (100f - s.health)/100f;
+        // Simular dormir
+        if (action == AIAction.SLEEPING)
+            sim.sleep = AIStatus.ClampStatusValue(sim.sleep, (ai_status.sleepDecay + ai_status.sleepRecovery) * Time.deltaTime);
 
-        float switchCost = (prev != null && current != null && current.Name != prev.Name) ? 1f : 0f;
+        // Simular combate
+        if (nearestEnemy)
+        {
+            // Diminuir a vida se estiver perto e a ação não for de combate
+            if (action != AIAction.ATTACKING &&
+                Vector2.Distance(nearestEnemy.transform.position, parent.position) <= ai_combat.atkRange)
+                sim.health = AIStatus.ClampStatusValue(sim.health, -(nearestEnemy.GetAtkDmg() / horizon));
 
-        return wHunger*hungerCost + wEnergy*energyCost + wHygiene*hygieneCost
-               + wRats*ratsCost + wHealth*healthCost + wActionSwitch*switchCost;
-    } 
-    */
+            if (action == AIAction.WALKTOATTACK)
+            {
+                Vector2 dirToEnemy = (nearestEnemy.transform.position - parent.position).normalized;
+                Vector2 currentSimPosition = (Vector2)parent.position + (dirToEnemy * ai_movement.GetMvSpeed() * (iteration + 1));
+                if (Vector2.Distance(nearestEnemy.transform.position, parent.position) <= ai_combat.atkRange)
+                    sim.health = AIStatus.ClampStatusValue(sim.health, -(nearestEnemy.GetAtkDmg() / horizon));
+            }
+        }
+
+        // Simular comida
+        if (nearestFoodSource)
+        {
+            if (action == AIAction.EATING &&
+                Vector3.Distance(parent.position, nearestFoodSource.transform.position) <= eatingDist)
+                sim.hunger = AIStatus.ClampStatusValue(sim.hunger, (ai_status.hungerDecay + ai_status.hungerPerFood) * Time.deltaTime);
+        }
+    }
 
     protected override bool ShouldStopSleeping()
     {
-        return false;
-    }
+        if (DecideNewAction() == AIAction.SLEEPING)
+            return false;
 
-    protected override bool ShouldStartChasingEnemy(Enemy source, bool tookDamage)
-    {
-        return false;
+        return true;
     }
 }
-
-
-/* OLD MPC
- * 
- * using UnityEngine;
-
-/// <summary>
-/// Controlador de decisão baseado em Modelo Preditivo (MPC)
-/// que considera o decaimento passivo e aplica efeitos simbólicos
-/// apenas dentro da simulação preditiva.
-/// </summary>
-public class MPC : AIHead
-{
-    [Header("Parâmetros MPC")]
-    public int horizon;            // Horizonte de predição (passos)
-    public int numCandidates;      // Número de sequências testadas
-    public float gamma;         // Fator de desconto (peso do futuro)
-
-    [Header("Pesos de Custo")]
-    public float wHunger;
-    public float wSleep;
-    public float wHealth;
-    public float wEnemy;
-    public float wSwitch;
-
-    private bool isDeciding = false;
-
-    // =====================================================
-    // ================ MÉTODOS PRINCIPAIS =================
-    // =====================================================
-
-    protected override AIAction DecideNewAction()
-    {
-        // Evita reentrância (recursão infinita)
-        if (isDeciding)
-            return currentAction != AIAction.NONE ? currentAction : AIAction.SEARCHINGFOOD;
-
-        if (ai_status == null)
-            return AIAction.SEARCHINGFOOD;
-
-        if (currentAction == AIAction.DEAD || ai_status.health <= 0f)
-            return AIAction.DEAD;
-
-        isDeciding = true;
-
-        AIAction bestAction = AIAction.SEARCHINGFOOD;
-        float bestCost = float.MaxValue;
-
-        foreach (AIAction a in System.Enum.GetValues(typeof(AIAction)))
-        {
-            if (a == AIAction.NONE || a == AIAction.DEAD)
-                continue;
-
-            float cost = SimulateFuture(a);
-            if (cost < bestCost)
-            {
-                bestCost = cost;
-                bestAction = a;
-            }
-        }
-
-        //Debug.Log($"[MPC] hunger={ai_status.hunger:F1}, sleep={ai_status.sleep:F1}, health={ai_status.health:F1} -> Escolheu {bestAction} (custo={bestCost:F2})");
-
-        isDeciding = false;
-        return bestAction;
-    }
-
-    // =====================================================
-    // =============== SIMULAÇÃO PREDITIVA =================
-    // =====================================================
-
-    private float SimulateFuture(AIAction firstAction)
-    {
-        SimulatedStatus sim = new SimulatedStatus(ai_status);
-        float totalCost = 0f;
-        AIAction prevAction = currentAction;
-        AIAction current = firstAction;
-
-        for (int t = 0; t < horizon; t++)
-        {
-            // aplica decaimento passivo e efeitos simbólicos
-            ApplyPassiveDecay(ref sim);
-            ApplySymbolicEffect(ref sim, current);
-
-            // custo do passo
-            totalCost += Mathf.Pow(gamma, t) * ComputeCost(sim, current, prevAction);
-
-            prevAction = current;
-            current = ChooseHeuristicNext(sim);
-
-            if (sim.health <= 0f)
-            {
-                totalCost += 10000f; // penalidade grande para morte
-                break;
-            }
-        }
-
-        return totalCost;
-    }
-
-    // =====================================================
-    // ============= SIMULAÇÃO DO DECAY PASSIVO ============
-    // =====================================================
-
-    private void ApplyPassiveDecay(ref SimulatedStatus s)
-    {
-        s.hunger = Mathf.Clamp(s.hunger - ai_status.hungerPerSecond * Time.deltaTime, 0f, s.max);
-        s.sleep = Mathf.Clamp(s.sleep - ai_status.sleepPerSecond * Time.deltaTime, 0f, s.max);
-
-        // dano por fome extrema
-        if (s.hunger <= 0f)
-            s.health = Mathf.Clamp(s.health - ai_status.hungerPerSecond * Time.deltaTime, 0f, s.max);
-
-        // recuperação se bem alimentado e descansado
-        if (s.hunger >= ai_status.minHungerToHPRecovery && s.sleep >= 0.0f)
-            s.health = Mathf.Clamp(s.health + ai_status.healthRecovery * Time.deltaTime, 0f, s.max);
-    }
-
-    // =====================================================
-    // ============= EFEITOS SIMBÓLICOS POR AÇÃO ============
-    // =====================================================
-
-    private void ApplySymbolicEffect(ref SimulatedStatus s, AIAction a)
-    {
-        // Pequenas alterações internas para que o MPC perceba diferenças.
-        switch (a)
-        {
-            case AIAction.EATING:
-                s.hunger = Mathf.Clamp(s.hunger + 15f, 0f, s.max);
-                break;
-            case AIAction.SLEEPING:
-                s.sleep = Mathf.Clamp(s.sleep + 20f, 0f, s.max);
-                break;
-            case AIAction.ATTACKING:
-                s.health = Mathf.Clamp(s.health - 5f, 0f, s.max);
-                break;
-        }
-    }
-
-    // =====================================================
-    // ============== FUNÇÃO DE CUSTO CONTEXTUAL ============
-    // =====================================================
-
-    private float ComputeCost(SimulatedStatus s, AIAction current, AIAction previous)
-    {
-        float max = s.max;
-        float hungerNorm = (max - s.hunger) / max;
-        float sleepNorm = (max - s.sleep) / max;
-        float healthNorm = (max - s.health) / max;
-
-        float c = 0f;
-        c += wHunger * Mathf.Pow(hungerNorm, 2);
-        c += wSleep * Mathf.Pow(sleepNorm, 2);
-        c += wHealth * Mathf.Pow(healthNorm, 2);
-        c += wEnemy * (nearestEnemy != null ? 1f : 0f);
-
-        // penaliza incoerências de contexto
-        if (current == AIAction.SLEEPING && s.sleep > 80f) c += 2f;
-        if (current == AIAction.EATING && s.hunger > 80f) c += 2f;
-        if (current == AIAction.WALKTOATTACK && nearestEnemy == null) c += 3f;
-
-        // pequena recompensa simbólica para coerência
-        if (current == AIAction.SEARCHINGFOOD && s.hunger < 50f) c -= 0.5f;
-
-        if (current != previous)
-            c += wSwitch;
-
-        // penaliza continuar comendo em combate
-        if (current == AIAction.EATING && nearestEnemy != null)
-            c += 10f;
-
-        // penaliza ignorar fome crítica
-        if (s.hunger < 30f && current != AIAction.EATING)
-            c += 5f;
-
-        // penaliza continuar dormindo com inimigo por perto
-        if (current == AIAction.SLEEPING && nearestEnemy != null)
-            c += 8f;
-
-
-        return c;
-    }
-
-    // =====================================================
-    // ================= HEURÍSTICA AUXILIAR ===============
-    // =====================================================
-
-    private AIAction ChooseHeuristicNext(SimulatedStatus s)
-    {
-        if (s.hunger < 30f) return AIAction.EATING;
-        if (s.sleep < 25f) return AIAction.SLEEPING;
-        if (nearestEnemy != null) return AIAction.WALKTOATTACK;
-        return AIAction.SEARCHINGFOOD;
-    }
-
-    // =====================================================
-    // ================ MÉTODOS HERDADOS ===================
-    // =====================================================
-
-    protected override bool ShouldStopSleeping()
-    {
-        if (ai_status == null) return true;
-        return ai_status.sleep >= satisfyingSleep;
-    }
-
-    protected override bool ShouldStartChasingEnemy(Enemy source, bool tookDamage)
-    {
-        if (source == null) return false;
-        if (tookDamage) return true;
-
-        float dist = Vector3.Distance(parent.position, source.transform.position);
-        return dist < 6f;
-    }
-
-    // =====================================================
-    // ============= ESTRUTURA DE ESTADO LOCAL =============
-    // =====================================================
-
-    private struct SimulatedStatus
-    {
-        public float health;
-        public float sleep;
-        public float hunger;
-        public readonly float max;
-
-        public SimulatedStatus(AIStatus real)
-        {
-            if (real != null)
-            {
-                health = real.health;
-                sleep = real.sleep;
-                hunger = real.hunger;
-                max = real.maxStatusValue;
-            }
-            else
-            {
-                max = 100f;
-                health = max;
-                sleep = max * 0.6f;
-                hunger = max * 0.6f;
-            }
-        }
-    }
-}
-*/

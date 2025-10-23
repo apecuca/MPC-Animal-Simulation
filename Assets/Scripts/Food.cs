@@ -4,7 +4,7 @@ public class Food : MonoBehaviour
 {
     private float foodLeft;
     private static readonly float maxFood = 10.0f; // Quantos segundos ela vai durar
-    private static readonly float disabledDuration = 120.0f; // Em segundos
+    private static readonly float disabledDuration = 90.0f; // Em segundos
     private float disabledTimer = 0.0f;
     private bool disabled = false;
 
@@ -18,6 +18,7 @@ public class Food : MonoBehaviour
 
         foodLeft = maxFood;
         disabledTimer = 0.0f;
+        disabled = false;
 
         ToggleFood(true);
     }
@@ -30,7 +31,9 @@ public class Food : MonoBehaviour
         // Lidar com o timer de reativação
         disabledTimer -= Time.deltaTime;
         if (disabledTimer <= 0.0f)
+        {
             ToggleFood(true);
+        }
     }
 
     public bool Eat()
@@ -51,6 +54,6 @@ public class Food : MonoBehaviour
     {
         col.enabled = vl;
         spr.enabled = vl;
-        disabled = vl;
+        disabled = !vl;
     }
 }

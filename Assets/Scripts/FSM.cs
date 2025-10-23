@@ -65,54 +65,12 @@ public class FSM : AIHead
         return newAction; 
     }
 
-    protected override bool ShouldStopSleeping()
+    override protected bool ShouldStopSleeping()
     {
         if (ai_status.hunger <= dangerousHunger ||
-            ai_status.sleep >= ai_status.maxStatusValue - 1.0f)
+            ai_status.sleep >= AIStatus.maxStatusValue - 1.0f)
             return true;
 
         return false;
-    }
-
-    protected override bool ShouldStartChasingEnemy(Enemy source, bool tookDamage)
-    {
-        // Dar os motivos para NÃO seguir
-        // Se nenhum for verdadeiro, vai
-
-        // Erro, nenhuma fonte
-        if (!source) return false;
-
-        // Caso já tenha um inimigo perto
-        if (nearestEnemy != null)
-        {
-            float currentDist = Vector2.Distance(parent.position, nearestEnemy.transform.position);
-            float newDist = Vector2.Distance(parent.position, source.transform.position);
-
-            // Fonte antiga é mais favorável
-            if (source.health >= nearestEnemy.health &&
-                newDist > currentDist)
-                return false;
-
-            // Já está em combate
-            if ((currentAction == AIAction.ATTACKING || currentAction == AIAction.WALKTOATTACK) &&
-                nearestEnemy == source)
-                return false;
-        }
-
-        // Continuar dormindo se não tomou dano
-        if (currentAction == AIAction.SLEEPING)
-        {
-            if (!tookDamage)
-                return false;
-        }
-
-        // Continuar comendo se estiver quase acabando
-        if (currentAction == AIAction.EATING)
-        {
-            if (ai_status.hunger <= dangerousHunger)
-                return false;
-        }
-
-        return true;
     }
 }

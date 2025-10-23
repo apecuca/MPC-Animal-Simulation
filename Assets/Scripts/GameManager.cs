@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private bool testingHunger;
     [SerializeField] private bool testingSleep;
     [SerializeField] private bool testingEnemy;
+    [SerializeField] private bool preventEnemySpawn;
     private GameObject currentTestEnemy;
 
     [Header("Simulation")]
@@ -65,9 +66,12 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        enemySpawnTimer -= Time.deltaTime;
-        if (enemySpawnTimer <= 0.0f)
-            SpawnEnemy();
+        if (!preventEnemySpawn)
+        {
+            enemySpawnTimer -= Time.deltaTime;
+            if (enemySpawnTimer <= 0.0f)
+                SpawnEnemy();
+        }
 
         if (Input.GetKeyDown(KeyCode.R))
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
