@@ -484,6 +484,7 @@ MonoBehaviour:
   wSleep: 0.0001
   wHealth: 18
   wEnemy: 14
+  wSwitch: 0.001
 --- !u!4 &1364102189
 Transform:
   m_ObjectHideFlags: 0

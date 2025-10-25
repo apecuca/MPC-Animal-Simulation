@@ -1,8 +1,10 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
+/// @brief Gerencia os principais elementos e estados da simulação.
+/// @details Controla a geração de comida, spawn de inimigos, inicialização da simulação e parâmetros de teste.
 public class GameManager : MonoBehaviour
 {
+    /// @brief Tamanho total do mapa da simulação.
     public static Vector2 mapSize { get; private set; } = new Vector2(100.0f, 100.0f);
 
     [Header("Tests")]
@@ -25,7 +27,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float timeBetweenEnemies = 5.0f;
     [SerializeField] private float enemySpawnPlusDist = 5.0f;
     private float enemySpawnTimer = 0.0f;
-    //private List<>
 
     [Header("Assignables")]
     [SerializeField] private AIStatus ai_status;
@@ -33,8 +34,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject enemyPrefab;
     [SerializeField] private Transform foodParent;
 
+    /// @brief Instância global do GameManager.
     public static GameManager instance { get; private set; }
 
+    /// @brief Inicializa a instância do GameManager e configura parâmetros iniciais.
     private void Awake()
     {
         if (instance != null)
@@ -51,6 +54,7 @@ public class GameManager : MonoBehaviour
         Application.targetFrameRate = 120;
     }
 
+    /// @brief Configura a simulação no início da execução.
     private void Start()
     {
         if (!testingHunger)
@@ -64,6 +68,8 @@ public class GameManager : MonoBehaviour
         SimManager.instance.StartWatching();
     }
 
+    /// @brief Atualiza o loop principal da simulação.
+    /// @details Gerencia o tempo entre spawns de inimigos e permite spawn manual com a tecla E.
     private void Update()
     {
         if (!preventEnemySpawn)
@@ -73,20 +79,20 @@ public class GameManager : MonoBehaviour
                 SpawnEnemy();
         }
 
-        if (Input.GetKeyDown(KeyCode.R))
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-
         if (Input.GetKeyDown(KeyCode.E))
             SpawnEnemy(true);
     }
 
+    /// @brief Gera as fontes de alimento distribuídas pelo mapa.
     private void GenerateFood()
     {
         Vector2 posToSpawn = Vector2.zero;
         Vector2 spawnArea = new Vector2(mapSize.x - wallDistance, mapSize.y - wallDistance);
 
-        for (uint i = 0; i <= foodPerAxis; i++) {
-            for (uint j = 0; j <= foodPerAxis; j++) {
+        for (uint i = 0; i <= foodPerAxis; i++)
+        {
+            for (uint j = 0; j <= foodPerAxis; j++)
+            {
                 // Ignorar centro
                 if (i == 5 && j == 5)
                     continue;
@@ -101,6 +107,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// @brief Cria um novo inimigo na simulação.
+    /// @param[in] onMousePosition Define se o inimigo deve aparecer na posição do mouse (true) ou aleatoriamente fora do campo de visão (false).
     private void SpawnEnemy(bool onMousePosition = false)
     {
         bool spawnHorizontal = Random.value > 0.5f;
@@ -130,10 +138,12 @@ public class GameManager : MonoBehaviour
         }
         else
             Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-        
+
         enemySpawnTimer = timeBetweenEnemies;
     }
 
+    /// @brief Chamado quando a IA principal morre.
+    /// @details Desativa a simulação e remove inimigos do cenário.
     public void OnAIDied()
     {
         this.enabled = false;
@@ -144,6 +154,7 @@ public class GameManager : MonoBehaviour
         SimManager.instance.OnSimStepEnded();
     }
 
+    /// @brief Desenha os limites do mapa no editor.
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;

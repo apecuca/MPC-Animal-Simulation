@@ -1,16 +1,21 @@
 using UnityEngine;
 
+/// @enum AIAction
+/// @brief Define as ações possíveis que a IA pode executar durante seu ciclo de vida.
 public enum AIAction
 {
-    NONE,
-    SEARCHINGFOOD,
-    EATING,
-    SLEEPING,
-    WALKTOATTACK,
-    ATTACKING,
-    DEAD
+    NONE,               ///< Nenhuma ação ativa.
+    SEARCHINGFOOD,      ///< Procurando comida.
+    EATING,             ///< Comendo.
+    SLEEPING,           ///< Dormindo.
+    WALKTOATTACK,       ///< Caminhando até o inimigo para atacar.
+    ATTACKING,          ///< Atacando o inimigo.
+    DEAD                ///< Estado de morte.
 }
 
+/// @class AIHead
+/// @brief Classe base para agentes de IA, responsável pela lógica de controle de ações e comportamentos.
+/// @details Gerencia o ciclo de vida do agente, mudanças de ação, resposta a eventos e controle de comportamento.
 public class AIHead : MonoBehaviour
 {
     protected AIAction currentAction = AIAction.NONE;
@@ -30,10 +35,7 @@ public class AIHead : MonoBehaviour
 
     // EATING
     protected float eatingDist = 0.75f;
-    //protected float eatDuration = 10.0f;
-    //protected float eatingTimer = 0.0f;
     protected float dangerousHunger = 60.0f;
-    // No caso de dano
     protected float timeLeftToContinueEating = 1.0f;
 
     // SLEEPING
@@ -47,6 +49,7 @@ public class AIHead : MonoBehaviour
 
     public static AIHead instance { get; private set; }
 
+    /// @brief Inicializa a instância singleton e referências principais.
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -60,11 +63,13 @@ public class AIHead : MonoBehaviour
         parent = transform;
     }
 
+    /// @brief Chamado na inicialização, inicia o ciclo de decisão.
     private void Start()
     {
         OnActionEnded();
     }
 
+    /// @brief Atualização a cada frame para gerenciar comportamentos.
     virtual protected void Update()
     {
         ManageBehaviour();
@@ -72,6 +77,7 @@ public class AIHead : MonoBehaviour
 
     #region MANAGEMENT
 
+    /// @brief Gerencia o comportamento atual com base na ação ativa.
     private void ManageBehaviour()
     {
         // Ações sem comportamento
@@ -82,21 +88,24 @@ public class AIHead : MonoBehaviour
         // Comportamento por frame de cada ação
         switch (currentAction)
         {
-            case AIAction.SEARCHINGFOOD:    Behaviour_searchingfood(); break;
-            case AIAction.EATING:           Behaviour_eating(); break;
-            case AIAction.SLEEPING:         Behaviour_sleeping(); break;
-            case AIAction.WALKTOATTACK:     Behaviour_walkToAttack(); break;
-            case AIAction.ATTACKING:        Behaviour_attacking(); break;
+            case AIAction.SEARCHINGFOOD: Behaviour_searchingfood(); break;
+            case AIAction.EATING: Behaviour_eating(); break;
+            case AIAction.SLEEPING: Behaviour_sleeping(); break;
+            case AIAction.WALKTOATTACK: Behaviour_walkToAttack(); break;
+            case AIAction.ATTACKING: Behaviour_attacking(); break;
             default: break;
         }
     }
 
+    /// @brief Chamado ao finalizar uma ação para decidir a próxima.
     protected void OnActionEnded()
     {
         AIAction newAction = DecideNewAction();
         ForceNewAction(newAction);
     }
 
+    /// @brief Força a IA a iniciar uma nova ação, limpando estados anteriores.
+    /// @param[in] newAction A nova ação a ser executada.
     protected void ForceNewAction(AIAction newAction)
     {
         if (currentAction == AIAction.DEAD)
@@ -109,17 +118,18 @@ public class AIHead : MonoBehaviour
         // Preparar nova ação
         switch (newAction)
         {
-            case AIAction.SEARCHINGFOOD:    NewAction_searchingfood(); break;
-            case AIAction.EATING:           NewAction_eating(); break;
-            case AIAction.SLEEPING:         NewAction_sleeping(); break;
-            case AIAction.WALKTOATTACK:     NewAction_walkToAttack(); break;
-            case AIAction.ATTACKING:        NewAction_attacking(); break;
+            case AIAction.SEARCHINGFOOD: NewAction_searchingfood(); break;
+            case AIAction.EATING: NewAction_eating(); break;
+            case AIAction.SLEEPING: NewAction_sleeping(); break;
+            case AIAction.WALKTOATTACK: NewAction_walkToAttack(); break;
+            case AIAction.ATTACKING: NewAction_attacking(); break;
             default: break;
         }
 
         currentAction = newAction;
     }
 
+    /// @brief Limpa os efeitos e variáveis da ação anterior antes de trocar de comportamento.
     private void ClearLastAction()
     {
         // Parar movimento
@@ -132,28 +142,23 @@ public class AIHead : MonoBehaviour
                 goingBackIn = false;
                 break;
 
-            case AIAction.EATING: 
-                //lockedObject = null;
-                //eatingTimer = 0.0f;
-                break;
-
+            case AIAction.EATING: break;
             case AIAction.SLEEPING: break;
-
             case AIAction.WALKTOATTACK: break;
-
             case AIAction.ATTACKING: break;
-
             default: break;
         }
     }
 
-    // Finalizar a simulação
+    /// @brief Finaliza a vida do agente, acionando o GameManager.
     public void OnLifeEnded()
     {
         GameManager.instance.OnAIDied();
         ForceNewAction(AIAction.DEAD);
     }
 
+    /// @brief Notifica o agente de que um inimigo foi avistado.
+    /// @param[in] spottedEnemy Inimigo detectado.
     public void OnEnemySpotted(Enemy spottedEnemy)
     {
         if (IsNewEnemyCloser(spottedEnemy))
@@ -163,7 +168,9 @@ public class AIHead : MonoBehaviour
             ForceNewAction(AIAction.WALKTOATTACK);
     }
 
-    // Chamado por inimigos ao acertar um ataque
+    /// @brief Aplica dano ao agente e decide se deve reagir ao inimigo.
+    /// @param[in] dmg Quantidade de dano recebido.
+    /// @param[in] source Inimigo que causou o dano.
     public void TakeDamage(float dmg, Enemy source)
     {
         ai_status.DecrementHealth(dmg);
@@ -180,11 +187,12 @@ public class AIHead : MonoBehaviour
 
     #region DECISIONS
 
-    // O objetivo é que as classes derivadas tenham a própria
-    // tomada de decisões, que começa e termina aqui
+    /// @brief Define o processo de tomada de decisão. Deve ser sobrescrito nas classes derivadas.
+    /// @return A próxima ação a ser executada.
     virtual protected AIAction DecideNewAction() { return AIAction.NONE; }
 
-    // Decidir se deveria ou não parar de dormir
+    /// @brief Define se o agente deve parar de dormir.
+    /// @return Verdadeiro se deve acordar; falso caso contrário.
     virtual protected bool ShouldStopSleeping() { return false; }
 
     #endregion
@@ -193,7 +201,7 @@ public class AIHead : MonoBehaviour
 
     #region BEHAVIOURS/NEW ACTIONS
 
-    // Procurar por comida
+    /// @brief Inicializa a ação de busca por comida.
     private void NewAction_searchingfood()
     {
         Vector2 newDir = Vector2.zero;
@@ -204,7 +212,7 @@ public class AIHead : MonoBehaviour
 
             // Evitar voltar para o lugar original
             if (parent.position.x < -GameManager.mapSize.x ||
-                parent.position.x > GameManager.mapSize.x) 
+                parent.position.x > GameManager.mapSize.x)
                 newDir.y = Random.Range(-1.0f, 1.0f);
 
             if (parent.position.y < -GameManager.mapSize.y ||
@@ -223,6 +231,7 @@ public class AIHead : MonoBehaviour
         ai_movement.SetMoveDir(newDir);
     }
 
+    /// @brief Executa o comportamento de busca de comida por frame.
     private void Behaviour_searchingfood()
     {
         if (IsOutOfMap())
@@ -244,7 +253,7 @@ public class AIHead : MonoBehaviour
         }
     }
 
-    // Comer
+    /// @brief Inicializa a ação de comer.
     private void NewAction_eating()
     {
         if (nearestFoodSource == null)
@@ -256,6 +265,7 @@ public class AIHead : MonoBehaviour
         lockedObject = nearestFoodSource.transform;
     }
 
+    /// @brief Executa o comportamento de comer por frame.
     private void Behaviour_eating()
     {
         // Condições para erro
@@ -281,12 +291,13 @@ public class AIHead : MonoBehaviour
         }
     }
 
-    // Dormir
+    /// @brief Inicializa a ação de dormir.
     private void NewAction_sleeping()
     {
 
     }
 
+    /// @brief Executa o comportamento de sono por frame.
     private void Behaviour_sleeping()
     {
         if (ShouldStopSleeping())
@@ -298,7 +309,7 @@ public class AIHead : MonoBehaviour
         ai_status.RecoverSleep();
     }
 
-    // Andar até o ataque
+    /// @brief Inicializa a ação de caminhar até o inimigo para atacar.
     private void NewAction_walkToAttack()
     {
         if (nearestEnemy == null)
@@ -307,7 +318,7 @@ public class AIHead : MonoBehaviour
             return;
         }
 
-        lockedObject = nearestEnemy.transform; 
+        lockedObject = nearestEnemy.transform;
 
         if (ai_combat.IsInAtkRange(parent, lockedObject))
         {
@@ -316,6 +327,7 @@ public class AIHead : MonoBehaviour
         }
     }
 
+    /// @brief Executa o comportamento de caminhada até o ataque.
     private void Behaviour_walkToAttack()
     {
         if (ai_combat.IsInAtkRange(parent, lockedObject))
@@ -328,7 +340,7 @@ public class AIHead : MonoBehaviour
         ai_movement.SetMoveDir(newDir);
     }
 
-    // Atacar
+    /// @brief Inicializa a ação de ataque.
     private void NewAction_attacking()
     {
         if (nearestEnemy == null)
@@ -348,6 +360,7 @@ public class AIHead : MonoBehaviour
         ai_combat.StartAttackTimer();
     }
 
+    /// @brief Executa o comportamento de ataque por frame.
     private void Behaviour_attacking()
     {
         if (!lockedObject)
@@ -373,6 +386,8 @@ public class AIHead : MonoBehaviour
 
     #region UTIls
 
+    /// @brief Verifica se o agente está fora dos limites do mapa.
+    /// @return Verdadeiro se estiver fora dos limites.
     private bool IsOutOfMap()
     {
         if (parent.position.x > GameManager.mapSize.x ||
@@ -384,6 +399,8 @@ public class AIHead : MonoBehaviour
         return false;
     }
 
+    /// @brief Chamado ao detectar uma nova fonte de comida.
+    /// @param[in] source Transform da fonte de comida detectada.
     public void OnFoodSourceDetected(Transform source)
     {
         if (nearestFoodSource)
@@ -397,6 +414,9 @@ public class AIHead : MonoBehaviour
             nearestFoodSource = source.GetComponent<Food>();
     }
 
+    /// @brief Verifica se um novo inimigo está mais próximo que o atual.
+    /// @param[in] newEnemy Novo inimigo detectado.
+    /// @return Verdadeiro se o novo inimigo for mais próximo.
     public bool IsNewEnemyCloser(Enemy newEnemy)
     {
         if (nearestEnemy == null)
@@ -408,7 +428,10 @@ public class AIHead : MonoBehaviour
         return newDist < curDist;
     }
 
-    // Decidir se deveria PARAR O QUE ESTA FAZENDO para ir até um ataque
+    /// @brief Decide se o agente deve interromper sua ação atual para perseguir um inimigo.
+    /// @param[in] source Inimigo que provocou a decisão.
+    /// @param[in] tookDamage Define se o agente tomou dano.
+    /// @return Verdadeiro se deve iniciar perseguição.
     protected bool ShouldStartChasingEnemy(Enemy source, bool tookDamage)
     {
         // Dar os motivos para NÃO seguir
