@@ -2,6 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/* PARA IMPLEMENTAR
+ X Tempo total
+ - Comidas totais
+ - Média dos status
+*/
+
 /// @brief Representa uma etapa individual da simulação.
 /// @details Armazena o tempo total que a IA sobreviveu em um ciclo da simulação.
 struct SimulationStep
