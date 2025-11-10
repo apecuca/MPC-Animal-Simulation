@@ -127,6 +127,8 @@ public class AIHead : MonoBehaviour
         }
 
         currentAction = newAction;
+
+        SimManager.instance.OnActionChange();
     }
 
     /// @brief Limpa os efeitos e variáveis da ação anterior antes de trocar de comportamento.

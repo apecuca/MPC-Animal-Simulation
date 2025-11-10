@@ -50,9 +50,19 @@ public class AIStatus : MonoBehaviour
     [SerializeField] private Slider sld_health;
     [SerializeField] private Slider sld_sleep;
 
+    public static AIStatus instance { get; private set; }
+
     /// @brief Inicializa os valores de status e configura os sliders.
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+        else
+            instance = this;
+
         // Valores iniciais
         health = maxStatusValue;
         sleep = maxStatusValue;

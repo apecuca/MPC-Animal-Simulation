@@ -24,8 +24,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float foodRandOffset;
 
     [Header("Enemies")]
-    [SerializeField] private float timeBetweenEnemies = 5.0f;
-    [SerializeField] private float enemySpawnPlusDist = 5.0f;
+    [SerializeField] private float timeBetweenEnemies = 20.0f;
+    [SerializeField] private float enemySpawnPlusDist = 0.1f;
     private float enemySpawnTimer = 0.0f;
 
     [Header("Assignables")]

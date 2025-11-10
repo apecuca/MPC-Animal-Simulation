@@ -171,6 +171,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: SimWatcher
       objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: maxSteps
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: aiTypeStr
+      value: MPC
+      objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: ai_status
+      value: 
+      objectReference: {fileID: 87929945}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: currentScenario
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: runAllScenarios
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -484,7 +504,6 @@ MonoBehaviour:
   wSleep: 0.0001
   wHealth: 18
   wEnemy: 14
-  wSwitch: 0.001
 --- !u!4 &1364102189
 Transform:
   m_ObjectHideFlags: 0
@@ -576,6 +595,10 @@ PrefabInstance:
       propertyPath: ai_status
       value: 
       objectReference: {fileID: 87929945}
+    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
+      propertyPath: startingTimeScale
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 6463383137281711696, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
       propertyPath: m_Name
       value: SimulationCommon

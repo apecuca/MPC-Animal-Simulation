@@ -419,6 +419,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SimWatcher
       objectReference: {fileID: 0}
+    - target: {fileID: 8940051981813754780, guid: d1f541246d3fb544d8bb0a84c481a2db, type: 3}
+      propertyPath: maxSteps
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -476,41 +480,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4098640310133791644, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4098640310133791644, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
       propertyPath: ai_status
       value: 
       objectReference: {fileID: 1760993573}
-    - target: {fileID: 4715573474890170857, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: startingTimeScale
-      value: 15
-      objectReference: {fileID: 0}
     - target: {fileID: 6463383137281711696, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
       propertyPath: m_Name
       value: SimulationCommon
-      objectReference: {fileID: 0}
-    - target: {fileID: 8302731415778769195, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8302731415778769195, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8335456184557808454, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8335456184557808454, guid: 026209413dd6def4c9dfe5da56c0f059, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
