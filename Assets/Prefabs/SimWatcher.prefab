@@ -44,5 +44,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec2d1a2c2137c5b4996582c15aa9f8b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSteps: 5
-  avTime: 0
+  maxSteps: 100
+  runAllScenarios: 1
+  currentScenario: 0
+  currentSimData:
+    totalSimulations: 0
+    averageTime: 0
+    averageHealth: 0
+    averageHunger: 0
+    averageSleep: 0
+    shortestTime: 0
+    shortestID: 0
+    longestTime: 0
+    longestID: 0
+    averageActions: 0
