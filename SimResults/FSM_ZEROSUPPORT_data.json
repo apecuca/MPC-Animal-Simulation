@@ -1,0 +1,12 @@
+{
+    "totalSimulations": 100,
+    "averageTime": 31.885324478149415,
+    "averageHealth": 74.3982162475586,
+    "averageHunger": 13.163965225219727,
+    "averageSleep": 0.0,
+    "shortestTime": 23.614044189453126,
+    "shortestID": 46,
+    "longestTime": 48.293582916259769,
+    "longestID": 79,
+    "averageActions": 6.2931647300720219
+}
